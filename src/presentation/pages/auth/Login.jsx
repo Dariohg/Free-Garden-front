@@ -2,27 +2,27 @@ import { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
     Box,
+    Flex,
     Stack,
     Heading,
     Text,
     FormControl,
-    FormLabel,
     Input,
     Button,
     InputGroup,
     InputRightElement,
-    IconButton,
     FormErrorMessage,
     Alert,
     AlertIcon,
-    Divider,
     Link,
-    Flex,
-    useColorModeValue,
-    ScaleFade,
+    VStack,
 } from '@chakra-ui/react';
-import { FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiArrowRight } from 'react-icons/fi';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
+
+const MotionBox = motion(Box);
+const MotionFlex = motion(Flex);
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -34,9 +34,6 @@ const Login = () => {
 
     const navigate = useNavigate();
     const { login } = useAuth();
-
-    const bgColor = useColorModeValue('white', 'background.dark.secondary');
-    const borderColor = useColorModeValue('rgba(0, 0, 0, 0.05)', 'rgba(255, 255, 255, 0.05)');
 
     // Validar el formulario
     const validateForm = () => {
@@ -82,128 +79,216 @@ const Login = () => {
         }
     };
 
+    // Animaciones
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+                delayChildren: 0.2
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: {
+            y: 0,
+            opacity: 1,
+            transition: {
+                type: "spring",
+                stiffness: 100,
+                damping: 10
+            }
+        }
+    };
+
     return (
-        <ScaleFade initialScale={0.9} in={true}>
-            <Box
-                bg={bgColor}
-                p={8}
-                borderRadius="xl"
-                boxShadow="lg"
-                w={{ base: "full", sm: "450px" }}
-                maxW="100%"
-                borderWidth="1px"
-                borderColor={borderColor}
+        <MotionBox
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+            w={{ base: "90%", sm: "420px" }}
+            mx="auto"
+        >
+            <MotionBox
+                variants={itemVariants}
+                mb={10}
+                textAlign="center"
             >
-                <Stack spacing={6}>
-                    <Stack align="center" spacing={2}>
-                        <Text
-                            fontSize="3xl"
-                            fontWeight="bold"
-                            bgGradient="linear(to-r, brand.500, accent.500)"
-                            bgClip="text"
-                        >
-                            Free Garden
-                        </Text>
-                        <Heading as="h1" size="lg" textAlign="center">
-                            Iniciar Sesión
-                        </Heading>
-                        <Text color="text.secondary" fontSize="sm" textAlign="center">
-                            Accede a tu sistema de riego automático
-                        </Text>
-                    </Stack>
+                <Text
+                    bgGradient="linear(to-r, #4CAF50, #2196F3)"
+                    bgClip="text"
+                    fontSize="3xl"
+                    fontWeight="extrabold"
+                    letterSpacing="tight"
+                >
+                    Free Garden
+                </Text>
+                <Heading
+                    as="h1"
+                    size="xl"
+                    color="white"
+                    fontWeight="thin"
+                    letterSpacing="tight"
+                    mt={2}
+                >
+                    Iniciar Sesión
+                </Heading>
+            </MotionBox>
 
-                    {error && (
-                        <Alert status="error" borderRadius="md" variant="subtle">
-                            <AlertIcon />
-                            {error}
-                        </Alert>
-                    )}
+            {error && (
+                <MotionBox variants={itemVariants} mb={6}>
+                    <Alert status="error" borderRadius="md" bg="rgba(229, 62, 62, 0.2)" border="1px solid" borderColor="red.500" color="white">
+                        <AlertIcon color="red.500" />
+                        {error}
+                    </Alert>
+                </MotionBox>
+            )}
 
-                    <form onSubmit={handleSubmit}>
-                        <Stack spacing={4}>
-                            <FormControl isInvalid={!!formErrors.email}>
-                                <FormLabel htmlFor="email">Correo Electrónico</FormLabel>
+            <MotionBox variants={itemVariants}>
+                <form onSubmit={handleSubmit}>
+                    <VStack spacing={6}>
+                        <FormControl isInvalid={!!formErrors.email}>
+                            <Input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Correo electrónico"
+                                variant="unstyled"
+                                p={4}
+                                bg="rgba(255, 255, 255, 0.05)"
+                                border="none"
+                                borderBottom="2px solid"
+                                borderColor="rgba(255, 255, 255, 0.2)"
+                                borderRadius="4px 4px 0 0"
+                                color="white"
+                                _placeholder={{ color: 'gray.500' }}
+                                _hover={{ borderColor: "rgba(76, 175, 80, 0.5)" }}
+                                _focus={{
+                                    borderColor: "#4CAF50",
+                                    bg: "rgba(255, 255, 255, 0.07)"
+                                }}
+                                fontSize="md"
+                                h="56px"
+                            />
+                            <FormErrorMessage>{formErrors.email}</FormErrorMessage>
+                        </FormControl>
+
+                        <FormControl isInvalid={!!formErrors.password}>
+                            <InputGroup>
                                 <Input
-                                    id="email"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="tu@ejemplo.com"
+                                    id="password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Contraseña"
+                                    variant="unstyled"
+                                    p={4}
+                                    bg="rgba(255, 255, 255, 0.05)"
+                                    border="none"
+                                    borderBottom="2px solid"
+                                    borderColor="rgba(255, 255, 255, 0.2)"
+                                    borderRadius="4px 4px 0 0"
+                                    color="white"
+                                    _placeholder={{ color: 'gray.500' }}
+                                    _hover={{ borderColor: "rgba(76, 175, 80, 0.5)" }}
+                                    _focus={{
+                                        borderColor: "#4CAF50",
+                                        bg: "rgba(255, 255, 255, 0.07)"
+                                    }}
+                                    fontSize="md"
+                                    h="56px"
                                 />
-                                <FormErrorMessage>{formErrors.email}</FormErrorMessage>
-                            </FormControl>
-
-                            <FormControl isInvalid={!!formErrors.password}>
-                                <Flex align="baseline" justify="space-between">
-                                    <FormLabel htmlFor="password">Contraseña</FormLabel>
-                                    <Text
-                                        color="brand.500"
-                                        fontSize="xs"
-                                        cursor="pointer"
-                                        _hover={{ textDecoration: "underline" }}
+                                <InputRightElement h="56px">
+                                    <Box
+                                        as="button"
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        color="gray.500"
+                                        _hover={{ color: "white" }}
+                                        bg="transparent"
+                                        border="none"
                                     >
-                                        ¿Olvidaste tu contraseña?
-                                    </Text>
-                                </Flex>
-                                <InputGroup>
-                                    <Input
-                                        id="password"
-                                        type={showPassword ? 'text' : 'password'}
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="Tu contraseña"
-                                    />
-                                    <InputRightElement>
-                                        <IconButton
-                                            variant="ghost"
-                                            size="sm"
-                                            icon={showPassword ? <FiEyeOff /> : <FiEye />}
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                                        />
-                                    </InputRightElement>
-                                </InputGroup>
-                                <FormErrorMessage>{formErrors.password}</FormErrorMessage>
-                            </FormControl>
+                                        {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                                    </Box>
+                                </InputRightElement>
+                            </InputGroup>
+                            <FormErrorMessage>{formErrors.password}</FormErrorMessage>
+                        </FormControl>
 
+                        <Flex justify="flex-end" w="full">
+                            <Link
+                                color="gray.500"
+                                fontSize="sm"
+                                _hover={{ color: "#4CAF50" }}
+                                href="#"
+                            >
+                                ¿Olvidaste tu contraseña?
+                            </Link>
+                        </Flex>
+
+                        <MotionBox
+                            variants={itemVariants}
+                            w="full"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                        >
                             <Button
                                 type="submit"
-                                colorScheme="brand"
-                                size="lg"
-                                fontSize="md"
                                 isLoading={isLoading}
-                                mt={4}
+                                w="full"
+                                h="56px"
+                                bg="#4CAF50"
+                                color="white"
+                                fontWeight="medium"
+                                fontSize="md"
+                                _hover={{ bg: '#3B8C3F' }}
+                                _active={{ bg: '#2D682F' }}
+                                _focus={{ boxShadow: 'none' }}
+                                borderRadius="4px"
+                                rightIcon={<FiArrowRight />}
                             >
                                 Iniciar Sesión
                             </Button>
+                        </MotionBox>
 
-                            <Text fontSize="sm" color="text.secondary" textAlign="center" mt={4}>
-                                Para fines de demostración, usa:
-                                <br />
-                                <Text as="span" fontWeight="medium" color="text.primary">
-                                    admin@freegarden.com / admin123
-                                </Text>
-                            </Text>
-                        </Stack>
-                    </form>
-
-                    <Divider borderColor="gray.200" my={2} />
-
-                    <Box textAlign="center" fontSize="sm">
-                        <Text color="text.secondary">¿No tienes una cuenta?</Text>
-                        <Link
-                            as={RouterLink}
-                            to="/register"
-                            color="brand.500"
-                            _hover={{ color: 'brand.400' }}
-                            fontWeight="semibold"
+                        <MotionFlex
+                            variants={itemVariants}
+                            justify="center"
+                            align="center"
+                            mt={6}
                         >
-                            Regístrate
-                        </Link>
-                    </Box>
-                </Stack>
-            </Box>
-        </ScaleFade>
+                            <Text color="gray.500" fontSize="sm">
+                                ¿No tienes una cuenta?
+                            </Text>
+                            <Link
+                                as={RouterLink}
+                                to="/register"
+                                color="#4CAF50"
+                                fontWeight="medium"
+                                ml={2}
+                                fontSize="sm"
+                                _hover={{ textDecoration: 'none', color: '#3B8C3F' }}
+                            >
+                                Regístrate
+                            </Link>
+                        </MotionFlex>
+
+                        <MotionBox variants={itemVariants} textAlign="center" mt={8}>
+                            <Text fontSize="xs" color="gray.500">
+                                Para demostración, utiliza:
+                            </Text>
+                            <Text fontSize="xs" color="gray.400">
+                                admin@freegarden.com / admin123
+                            </Text>
+                        </MotionBox>
+                    </VStack>
+                </form>
+            </MotionBox>
+        </MotionBox>
     );
 };
 

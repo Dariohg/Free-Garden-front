@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import {Routes, Route, Navigate, useLocation} from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { Center, Spinner, Text, VStack } from '@chakra-ui/react';
 import { useAuth } from '@presentation/contexts/AuthContext';
@@ -6,6 +6,7 @@ import { useAuth } from '@presentation/contexts/AuthContext';
 // Layouts
 import DashboardLayout from '@presentation/layouts/DashboardLayout';
 import AuthLayout from '@presentation/layouts/AuthLayout';
+import {AnimatePresence} from "framer-motion";
 
 // Lazy-loaded pages
 const LandingPage = lazy(() => import('@presentation/pages/LandingPage'));
@@ -38,35 +39,38 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const AppRouter = () => {
+    const location = useLocation();
+
     return (
         <Suspense fallback={<LoadingFallback />}>
-            <Routes>
-                {/* Landing Page */}
-                <Route path="/" element={<LandingPage />} />
+            <AnimatePresence mode="wait">
+                <Routes location={location} key={location.pathname}>
+                    {/* Landing Page */}
+                    <Route path="/" element={<LandingPage />} />
 
-                {/* Rutas de autenticación */}
-                <Route path="/" element={<AuthLayout />}>
-                    <Route path="login" element={<Login />} />
-                    <Route path="register" element={<Register />} />
-                </Route>
+                    {/* Rutas de autenticación */}
+                    <Route path="/" element={<AuthLayout />}>
+                        <Route path="login" element={<Login />} />
+                        <Route path="register" element={<Register />} />
+                    </Route>
 
-                {/* Rutas protegidas del dashboard */}
-                <Route path="/dashboard" element={
-                    <ProtectedRoute>
-                        <DashboardLayout />
-                    </ProtectedRoute>
-                }>
-                    <Route index element={<Dashboard />} />
-                    {/*<Route path="sensors/:id" element={<SensorDetail />} />*/}
-                    {/*<Route path="statistics" element={<Statistics />} />*/}
-                    {/*<Route path="settings" element={<Settings />} /> */}
-                </Route>
+                    {/* Rutas protegidas del dashboard */}
+                    <Route path="/dashboard" element={
+                        <ProtectedRoute>
+                            <DashboardLayout />
+                        </ProtectedRoute>
+                    }>
+                        <Route index element={<Dashboard />} />
+                        <Route path="sensors/:id" element={<SensorDetail />} />
+                        <Route path="statistics" element={<Statistics />} />
+                        <Route path="settings" element={<Settings />} />
+                    </Route>
 
-                {/* Redirección por defecto */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                    {/* Redirección por defecto */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </AnimatePresence>
         </Suspense>
     );
 };
-
 export default AppRouter;

@@ -9,6 +9,7 @@ import HowItWorksSection from '../components/landing/HowItWorksSection';
 import TestimonialsSection from '../components/landing/TestimonialsSection';
 import CtaSection from '../components/landing/CtaSection';
 import FooterSection from '../components/landing/FooterSection';
+import MockupsSection from "@presentation/components/landing/MockupsSection.jsx";
 
 const LandingPage = () => {
     const [showScrollTop, setShowScrollTop] = useState(false);
@@ -43,6 +44,9 @@ const LandingPage = () => {
 
             {/* Features Section */}
             <FeaturesSection />
+
+            {/* Mockups Section */}
+            <MockupsSection />
 
             {/* Benefits Section */}
             <BenefitsSection />

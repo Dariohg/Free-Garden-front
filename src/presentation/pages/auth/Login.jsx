@@ -3,7 +3,6 @@ import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
     Box,
     Flex,
-    Stack,
     Heading,
     Text,
     FormControl,
@@ -16,13 +15,12 @@ import {
     AlertIcon,
     Link,
     VStack,
+    Grid,
+    GridItem,
+    Image, IconButton,
 } from '@chakra-ui/react';
-import { FiEye, FiEyeOff, FiArrowRight } from 'react-icons/fi';
-import { motion } from 'framer-motion';
+import {FiEye, FiEyeOff, FiArrowRight, FiArrowLeft} from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
-
-const MotionBox = motion(Box);
-const MotionFlex = motion(Flex);
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -79,216 +77,237 @@ const Login = () => {
         }
     };
 
-    // Animaciones
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1,
-                delayChildren: 0.2
-            }
-        }
-    };
-
-    const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: {
-            y: 0,
-            opacity: 1,
-            transition: {
-                type: "spring",
-                stiffness: 100,
-                damping: 10
-            }
-        }
+    // Función para volver a la página principal
+    const handleBackToHome = () => {
+        navigate('/');
     };
 
     return (
-        <MotionBox
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
-            w={{ base: "90%", sm: "420px" }}
-            mx="auto"
+        <Grid
+            templateColumns={{ base: "1fr", md: "1fr 1fr" }}
+            minH="100vh"
+            width="100%"
         >
-            <MotionBox
-                variants={itemVariants}
-                mb={10}
-                textAlign="center"
+            {/* Sección izquierda - Imagen del jardín */}
+            <GridItem
+                display={{ base: "none", md: "flex" }}
+                position="relative"
+                overflow="hidden"
             >
-                <Text
-                    bgGradient="linear(to-r, #4CAF50, #2196F3)"
-                    bgClip="text"
-                    fontSize="3xl"
-                    fontWeight="extrabold"
-                    letterSpacing="tight"
+                <Image
+                    src="https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=2069&auto=format&fit=crop"
+                    alt="Hermoso jardín"
+                    objectFit="cover"
+                    w="100%"
+                    h="100%"
+                />
+
+
+
+                {/* Overlay para mejorar visibilidad del texto */}
+                <Box
+                    position="absolute"
+                    top="0"
+                    left="0"
+                    right="0"
+                    bottom="0"
+                    bg="rgba(0, 0, 0, 0.3)"
+                />
+
+                {/* Logo y texto */}
+                <Box
+                    position="absolute"
+                    top="50%"
+                    left="50%"
+                    transform="translate(-50%, -50%)"
+                    textAlign="center"
+                    bg="rgba(255, 255, 255, 0.85)"
+                    p={8}
+                    borderRadius="md"
+                    width="80%"
+                    maxW="300px"
                 >
-                    Free Garden
-                </Text>
-                <Heading
-                    as="h1"
-                    size="xl"
-                    color="white"
-                    fontWeight="thin"
-                    letterSpacing="tight"
-                    mt={2}
+                    <Text
+                        color="#4CAF50"
+                        fontSize="3xl"
+                        fontWeight="bold"
+                        mb={2}
+                    >
+                        Free Garden
+                    </Text>
+                    <Text color="#333" fontSize="md">
+                        Sistema de riego automático inteligente para tu jardín
+                    </Text>
+                </Box>
+            </GridItem>
+
+            {/* Sección derecha - Formulario de login */}
+            <GridItem
+                bg="#121212"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                p={4}
+            >
+
+                <Box
+                    w="100%"
+                    maxW="400px"
+                    mx="auto"
                 >
-                    Iniciar Sesión
-                </Heading>
-            </MotionBox>
 
-            {error && (
-                <MotionBox variants={itemVariants} mb={6}>
-                    <Alert status="error" borderRadius="md" bg="rgba(229, 62, 62, 0.2)" border="1px solid" borderColor="red.500" color="white">
-                        <AlertIcon color="red.500" />
-                        {error}
-                    </Alert>
-                </MotionBox>
-            )}
-
-            <MotionBox variants={itemVariants}>
-                <form onSubmit={handleSubmit}>
-                    <VStack spacing={6}>
-                        <FormControl isInvalid={!!formErrors.email}>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="Correo electrónico"
-                                variant="unstyled"
-                                p={4}
-                                bg="rgba(255, 255, 255, 0.05)"
-                                border="none"
-                                borderBottom="2px solid"
-                                borderColor="rgba(255, 255, 255, 0.2)"
-                                borderRadius="4px 4px 0 0"
-                                color="white"
-                                _placeholder={{ color: 'gray.500' }}
-                                _hover={{ borderColor: "rgba(76, 175, 80, 0.5)" }}
-                                _focus={{
-                                    borderColor: "#4CAF50",
-                                    bg: "rgba(255, 255, 255, 0.07)"
-                                }}
-                                fontSize="md"
-                                h="56px"
-                            />
-                            <FormErrorMessage>{formErrors.email}</FormErrorMessage>
-                        </FormControl>
-
-                        <FormControl isInvalid={!!formErrors.password}>
-                            <InputGroup>
-                                <Input
-                                    id="password"
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Contraseña"
-                                    variant="unstyled"
-                                    p={4}
-                                    bg="rgba(255, 255, 255, 0.05)"
-                                    border="none"
-                                    borderBottom="2px solid"
-                                    borderColor="rgba(255, 255, 255, 0.2)"
-                                    borderRadius="4px 4px 0 0"
-                                    color="white"
-                                    _placeholder={{ color: 'gray.500' }}
-                                    _hover={{ borderColor: "rgba(76, 175, 80, 0.5)" }}
-                                    _focus={{
-                                        borderColor: "#4CAF50",
-                                        bg: "rgba(255, 255, 255, 0.07)"
-                                    }}
-                                    fontSize="md"
-                                    h="56px"
-                                />
-                                <InputRightElement h="56px">
-                                    <Box
-                                        as="button"
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        color="gray.500"
-                                        _hover={{ color: "white" }}
-                                        bg="transparent"
-                                        border="none"
-                                    >
-                                        {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                                    </Box>
-                                </InputRightElement>
-                            </InputGroup>
-                            <FormErrorMessage>{formErrors.password}</FormErrorMessage>
-                        </FormControl>
-
-                        <Flex justify="flex-end" w="full">
-                            <Link
-                                color="gray.500"
-                                fontSize="sm"
-                                _hover={{ color: "#4CAF50" }}
-                                href="#"
+                    <VStack spacing={6} align="stretch">
+                        {/* Encabezado */}
+                        <Box textAlign="center">
+                            <Text
+                                bgGradient="linear(to-r, #4CAF50, #2196F3)"
+                                bgClip="text"
+                                fontSize="3xl"
+                                fontWeight="bold"
+                                mb={1}
+                                display={{ base: "block", md: "none" }}
                             >
-                                ¿Olvidaste tu contraseña?
-                            </Link>
-                        </Flex>
-
-                        <MotionBox
-                            variants={itemVariants}
-                            w="full"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                        >
-                            <Button
-                                type="submit"
-                                isLoading={isLoading}
-                                w="full"
-                                h="56px"
-                                bg="#4CAF50"
-                                color="white"
-                                fontWeight="medium"
-                                fontSize="md"
-                                _hover={{ bg: '#3B8C3F' }}
-                                _active={{ bg: '#2D682F' }}
-                                _focus={{ boxShadow: 'none' }}
-                                borderRadius="4px"
-                                rightIcon={<FiArrowRight />}
-                            >
+                                Free Garden
+                            </Text>
+                            <Heading as="h1" size="xl" color="white" fontWeight="normal">
                                 Iniciar Sesión
-                            </Button>
-                        </MotionBox>
-
-                        <MotionFlex
-                            variants={itemVariants}
-                            justify="center"
-                            align="center"
-                            mt={6}
-                        >
-                            <Text color="gray.500" fontSize="sm">
-                                ¿No tienes una cuenta?
+                            </Heading>
+                            <Text color="gray.500" fontSize="sm" mt={2}>
+                                Accede a tu sistema de riego automático
                             </Text>
-                            <Link
-                                as={RouterLink}
-                                to="/register"
-                                color="#4CAF50"
-                                fontWeight="medium"
-                                ml={2}
+                        </Box>
+
+                        {/* Mensaje de error */}
+                        {error && (
+                            <Alert
+                                status="error"
+                                bg="rgba(229, 62, 62, 0.15)"
+                                color="red.200"
+                                borderRadius="md"
                                 fontSize="sm"
-                                _hover={{ textDecoration: 'none', color: '#3B8C3F' }}
                             >
-                                Regístrate
-                            </Link>
-                        </MotionFlex>
+                                <AlertIcon color="red.400" />
+                                {error}
+                            </Alert>
+                        )}
 
-                        <MotionBox variants={itemVariants} textAlign="center" mt={8}>
-                            <Text fontSize="xs" color="gray.500">
-                                Para demostración, utiliza:
+                        {/* Formulario */}
+                        <form onSubmit={handleSubmit}>
+
+                            <VStack spacing={4}>
+                                <FormControl isInvalid={!!formErrors.email}>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="Correo electrónico"
+                                        bg="#1E1E1E"
+                                        border="none"
+                                        color="white"
+                                        _placeholder={{ color: 'gray.500' }}
+                                        _hover={{ bg: "#252525" }}
+                                        _focus={{
+                                            bg: "#252525",
+                                            borderColor: "#4CAF50",
+                                        }}
+                                        borderRadius="md"
+                                        size="lg"
+                                    />
+                                    {formErrors.email && <FormErrorMessage>{formErrors.email}</FormErrorMessage>}
+                                </FormControl>
+
+                                <FormControl isInvalid={!!formErrors.password}>
+                                    <InputGroup size="lg">
+                                        <Input
+                                            id="password"
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            placeholder="Contraseña"
+                                            bg="#1E1E1E"
+                                            border="none"
+                                            color="white"
+                                            _placeholder={{ color: 'gray.500' }}
+                                            _hover={{ bg: "#252525" }}
+                                            _focus={{
+                                                bg: "#252525",
+                                                borderColor: "#4CAF50",
+                                            }}
+                                            borderRadius="md"
+                                        />
+                                        <InputRightElement>
+                                            <Button
+                                                h="1.75rem"
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                            >
+                                                {showPassword ? <FiEyeOff /> : <FiEye />}
+                                            </Button>
+                                        </InputRightElement>
+                                    </InputGroup>
+                                    {formErrors.password && <FormErrorMessage>{formErrors.password}</FormErrorMessage>}
+                                </FormControl>
+
+                                <Flex justify="flex-end" w="full">
+                                    <Link
+                                        color="gray.500"
+                                        fontSize="sm"
+                                        _hover={{ color: "#4CAF50" }}
+                                        href="#"
+                                    >
+                                        ¿Olvidaste tu contraseña?
+                                    </Link>
+                                </Flex>
+
+                                <Button
+                                    type="submit"
+                                    isLoading={isLoading}
+                                    width="100%"
+                                    bg="#4CAF50"
+                                    color="white"
+                                    _hover={{ bg: '#3B8C3F' }}
+                                    _active={{ bg: '#2D682F' }}
+                                    size="lg"
+                                    mt={2}
+                                    rightIcon={<FiArrowRight />}
+                                >
+                                    Iniciar Sesión
+                                </Button>
+
+                                <Flex justify="center" align="center" mt={2}>
+                                    <Text color="gray.500" fontSize="sm">
+                                        ¿No tienes una cuenta?
+                                    </Text>
+                                    <Link
+                                        as={RouterLink}
+                                        to="/register"
+                                        color="#4CAF50"
+                                        fontWeight="medium"
+                                        ml={2}
+                                        fontSize="sm"
+                                        _hover={{ color: '#3B8C3F' }}
+                                    >
+                                        Regístrate
+                                    </Link>
+                                </Flex>
+                            </VStack>
+                        </form>
+
+                        {/* Información de demostración */}
+                        <Box textAlign="center" mt={4}>
+                            <Text fontSize="xs" color="gray.600">
+                                Para fines de demostración, usa:
                             </Text>
-                            <Text fontSize="xs" color="gray.400">
+                            <Text fontSize="xs" color="gray.500">
                                 admin@freegarden.com / admin123
                             </Text>
-                        </MotionBox>
+                        </Box>
                     </VStack>
-                </form>
-            </MotionBox>
-        </MotionBox>
+                </Box>
+            </GridItem>
+        </Grid>
     );
 };
 

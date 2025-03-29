@@ -16,10 +16,10 @@ import {
 } from '@chakra-ui/react';
 import { FiMenu, FiBell, FiSettings, FiLogOut, FiMoon, FiSun } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
+import React from "react";
 
 const Header = ({ onMenuOpen }) => {
     const { user, logout } = useAuth();
-    const { colorMode, toggleColorMode } = useColorMode();
 
     const bgColor = useColorModeValue('white', 'background.dark.secondary');
     const borderColor = useColorModeValue('rgba(0, 0, 0, 0.08)', 'rgba(255, 255, 255, 0.08)');
@@ -64,14 +64,6 @@ const Header = ({ onMenuOpen }) => {
 
             {/* Right section - User menu */}
             <HStack spacing={4}>
-                <Tooltip label="Modo oscuro/claro">
-                    <IconButton
-                        aria-label="Cambiar tema"
-                        icon={colorMode === 'light' ? <FiMoon /> : <FiSun />}
-                        variant="ghost"
-                        onClick={toggleColorMode}
-                    />
-                </Tooltip>
 
                 <Tooltip label="Notificaciones">
                     <Box position="relative">

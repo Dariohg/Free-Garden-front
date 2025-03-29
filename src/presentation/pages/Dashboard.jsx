@@ -1,3 +1,5 @@
+// src/presentation/pages/Dashboard.jsx
+import { useState } from 'react';
 import {
     Box,
     Grid,
@@ -6,10 +8,6 @@ import {
     Flex,
     Card,
     CardBody,
-    Stat,
-    StatLabel,
-    StatNumber,
-    StatHelpText,
     Icon,
     SimpleGrid,
     Progress,
@@ -18,63 +16,29 @@ import {
     Avatar,
     Badge,
     useColorModeValue,
+    Spinner,
+    Alert,
+    AlertIcon,
 } from '@chakra-ui/react';
 import {
     FiDroplet,
     FiThermometer,
-    FiWifi,
+    FiActivity,
     FiPower,
     FiAlertCircle,
-    FiCalendar
+    FiCalendar,
+    FiSlash,
+    FiRefreshCw
 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
-import { useState } from 'react';
-
-// Componente para las tarjetas de estado
-const StatCard = ({ title, value, icon, helpText, color = "brand.500", onClick }) => {
-    const cardBg = useColorModeValue('white', 'background.dark.secondary');
-    const borderColor = useColorModeValue('rgba(0, 0, 0, 0.05)', 'rgba(255, 255, 255, 0.05)');
-
-    return (
-        <Card
-            bg={cardBg}
-            borderColor={borderColor}
-            boxShadow="sm"
-            transition="transform 0.2s"
-            _hover={{ transform: 'translateY(-5px)', boxShadow: 'md' }}
-            cursor={onClick ? "pointer" : "default"}
-            onClick={onClick}
-        >
-            <CardBody>
-                <Flex justify="space-between" align="center">
-                    <Stat>
-                        <StatLabel color="text.secondary">{title}</StatLabel>
-                        <StatNumber fontSize="3xl">{value}</StatNumber>
-                        {helpText && (
-                            <StatHelpText>
-                                {helpText}
-                            </StatHelpText>
-                        )}
-                    </Stat>
-                    <Flex
-                        w="56px"
-                        h="56px"
-                        align="center"
-                        justify="center"
-                        backgroundColor={`${color}20`}
-                        borderRadius="lg"
-                    >
-                        <Icon as={icon} color={color} boxSize={6} />
-                    </Flex>
-                </Flex>
-            </CardBody>
-        </Card>
-    );
-};
+import { useSensors } from '../hooks/useSensors';
+import { SensorCard } from '../components/dashboard/SensorCard';
+import { WaterLevelCard } from '../components/dashboard/WaterLevelCard';
 
 const Dashboard = () => {
     const { user } = useAuth();
     const [isIrrigationActive, setIsIrrigationActive] = useState(false);
+    const { isLoading, error, sensorData, refreshData } = useSensors();
 
     // Obtener el nombre del usuario de manera segura
     const userName = user?.name || 'Usuario';
@@ -88,49 +52,100 @@ const Dashboard = () => {
     const cardBg = useColorModeValue('white', 'background.dark.secondary');
     const borderColor = useColorModeValue('rgba(0, 0, 0, 0.05)', 'rgba(255, 255, 255, 0.05)');
 
+    // Función para determinar el texto de ayuda para la humedad del suelo
+    const getSoilHumidityHelpText = (value) => {
+        if (value < 40) return "Nivel bajo";
+        if (value < 60) return "Nivel aceptable";
+        return "Nivel óptimo";
+    };
+
+    // Función para determinar el texto de ayuda para el pH del agua
+    const getWaterPHHelpText = (value) => {
+        if (value < 6.0) return "Ácido";
+        if (value > 7.2) return "Alcalino";
+        return "Óptimo";
+    };
+
     return (
         <Box p={4}>
             {/* Cabecera */}
             <Box mb={8}>
-                <Heading as="h1" size="xl" mb={2}>
-                    Bienvenido a Free Garden, {userName}
-                </Heading>
-                <Text color="text.secondary">
-                    Monitorea y controla tu sistema de riego automático
-                </Text>
+                <Flex justify="space-between" align="center">
+                    <Box>
+                        <Heading as="h1" size="xl" mb={2}>
+                            Bienvenido a Free Garden, {userName}
+                        </Heading>
+                        <Text color="text.secondary">
+                            Monitorea y controla tu sistema de riego automático
+                        </Text>
+                    </Box>
+                    <Button
+                        leftIcon={<FiRefreshCw />}
+                        colorScheme="brand"
+                        variant="ghost"
+                        onClick={refreshData}
+                        isLoading={isLoading}
+                    >
+                        Actualizar
+                    </Button>
+                </Flex>
             </Box>
 
+            {/* Loading o Error */}
+            {isLoading && !sensorData.environment.temperature && (
+                <Flex justify="center" align="center" my={10}>
+                    <Spinner size="xl" color="brand.500" thickness="4px" mr={4} />
+                    <Text>Cargando datos de sensores...</Text>
+                </Flex>
+            )}
+
+            {error && (
+                <Alert status="error" borderRadius="md" mb={6}>
+                    <AlertIcon />
+                    {error}
+                </Alert>
+            )}
+
             {/* Tarjetas de estadísticas */}
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={5} mb={8}>
-                <StatCard
-                    title="Humedad del suelo"
-                    value="65%"
-                    helpText="Nivel óptimo"
-                    icon={FiDroplet}
-                    color="accent.500"
-                />
-                <StatCard
-                    title="Temperatura"
-                    value="24°C"
-                    helpText="Normal"
-                    icon={FiThermometer}
-                    color="orange.500"
-                />
-                <StatCard
-                    title="Nivel de agua"
-                    value="85%"
-                    helpText="Depósito"
-                    icon={FiDroplet}
-                    color="blue.500"
-                />
-                <StatCard
-                    title="Conectividad"
-                    value="Estable"
-                    helpText="Últimas 24h"
-                    icon={FiWifi}
-                    color="green.500"
-                />
-            </SimpleGrid>
+            {(!isLoading || sensorData.environment.temperature) && (
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={5} mb={8}>
+                    {/* Temperatura y humedad del ambiente */}
+                    <SensorCard
+                        title="Temperatura ambiente"
+                        value={`${sensorData.environment.temperature?.value || 0}${sensorData.environment.temperature?.unit || '°C'}`}
+                        secondValue={`${sensorData.environment.humidity?.value || 0}${sensorData.environment.humidity?.unit || '%'}`}
+                        secondLabel="Humedad"
+                        helpText="Normal"
+                        icon={FiThermometer}
+                        color="orange.500"
+                        progressValue={(sensorData.environment.temperature?.value / sensorData.environment.temperature?.maxValue) * 100 || 0}
+                    />
+
+                    {/* Humedad de la tierra */}
+                    <SensorCard
+                        title="Humedad de la tierra"
+                        value={`${sensorData.soilHumidity?.value || 0}${sensorData.soilHumidity?.unit || '%'}`}
+                        helpText={getSoilHumidityHelpText(sensorData.soilHumidity?.value || 0)}
+                        icon={FiDroplet}
+                        color="accent.500"
+                        progressValue={sensorData.soilHumidity?.value || 0}
+                    />
+
+                    {/* pH del agua */}
+                    <SensorCard
+                        title="pH del agua"
+                        value={`${sensorData.waterPH?.value || 0}`}
+                        helpText={getWaterPHHelpText(sensorData.waterPH?.value || 0)}
+                        icon={FiSlash}
+                        color="purple.500"
+                        progressValue={((sensorData.waterPH?.value - sensorData.waterPH?.minValue) /
+                            (sensorData.waterPH?.maxValue - sensorData.waterPH?.minValue)) * 100 || 0}
+                    />
+
+                    {/* Nivel del agua (componente personalizado) */}
+                    <WaterLevelCard data={sensorData.waterLevel} />
+                </SimpleGrid>
+            )}
 
             {/* Contenido principal */}
             <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={6}>
@@ -172,7 +187,7 @@ const Dashboard = () => {
                                     <Text>Bomba funcionando correctamente</Text>
                                 </HStack>
                                 <HStack spacing={2} p={3} bg="blue.50" borderRadius="md" color="blue.800">
-                                    <Icon as={FiWifi} />
+                                    <Icon as={FiActivity} />
                                     <Text>Sensores conectados</Text>
                                 </HStack>
                             </SimpleGrid>
@@ -210,16 +225,14 @@ const Dashboard = () => {
                                                 </Text>
                                             </Box>
                                         </HStack>
-                                        <Text
-                                            fontSize="sm"
-                                            bg={item.automatic ? "brand.50" : "gray.100"}
-                                            color={item.automatic ? "brand.700" : "gray.600"}
+                                        <Badge
                                             px={2}
                                             py={1}
                                             borderRadius="md"
+                                            colorScheme={item.automatic ? "brand" : "gray"}
                                         >
                                             {item.automatic ? "Automático" : "Manual"}
-                                        </Text>
+                                        </Badge>
                                     </Flex>
                                 ))}
                             </Box>
@@ -265,7 +278,7 @@ const Dashboard = () => {
                         </CardBody>
                     </Card>
 
-                    {/* Plantas destacadas - usando Avatar con iniciales en lugar de imágenes */}
+                    {/* Plantas destacadas */}
                     <Card bg={cardBg} borderColor={borderColor}>
                         <CardBody>
                             <Heading as="h3" size="md" mb={4}>

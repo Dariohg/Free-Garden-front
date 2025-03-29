@@ -7,6 +7,7 @@ import { useAuth } from '@presentation/contexts/AuthContext';
 import DashboardLayout from '@presentation/layouts/DashboardLayout';
 import AuthLayout from '@presentation/layouts/AuthLayout';
 import {AnimatePresence} from "framer-motion";
+import SensorList from "@presentation/pages/SensorList.jsx";
 
 // Lazy-loaded pages
 const LandingPage = lazy(() => import('@presentation/pages/LandingPage'));
@@ -61,6 +62,7 @@ const AppRouter = () => {
                         </ProtectedRoute>
                     }>
                         <Route index element={<Dashboard />} />
+                        <Route path="sensors" element={<SensorList />} />
                         <Route path="sensors/:id" element={<SensorDetail />} />
                         <Route path="statistics" element={<Statistics />} />
                         <Route path="settings" element={<Settings />} />

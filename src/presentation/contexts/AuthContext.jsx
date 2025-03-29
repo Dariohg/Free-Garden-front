@@ -1,5 +1,11 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthService } from '../../domain/services/authService';
+import { AuthRepository } from '../../infrastructure/repositories/authRepository';
+
+// Inicializar servicio y repositorio
+const authRepository = new AuthRepository();
+const authService = new AuthService(authRepository);
 
 const AuthContext = createContext(null);
 
@@ -14,79 +20,82 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
 
-    // Verificar si hay un usuario almacenado en localStorage al inicio
+    // Verificar si hay un usuario autenticado al iniciar
     useEffect(() => {
-        const storedUser = localStorage.getItem('freeGardenUser');
-        if (storedUser) {
+        const checkAuth = async () => {
+            setLoading(true);
             try {
-                setUser(JSON.parse(storedUser));
-            } catch (error) {
-                console.error('Error parsing stored user:', error);
-                localStorage.removeItem('freeGardenUser');
+                const currentUser = await authService.getCurrentUser();
+                setUser(currentUser);
+                setError(null);
+            } catch (err) {
+                console.error('Error verificando autenticación:', err);
+                setError(err.message);
+                setUser(null);
+            } finally {
+                setLoading(false);
             }
-        }
-        setLoading(false);
+        };
+
+        checkAuth();
     }, []);
 
     // Función para iniciar sesión
     const login = async (email, password) => {
+        setLoading(true);
+        setError(null);
         try {
-            // Simulación de login para desarrollo
-            // En producción, esto haría una petición a una API
-            if (email === 'admin@freegarden.com' && password === 'admin123') {
-                const userData = {
-                    id: '1',
-                    name: 'Administrador',
-                    email: email,
-                    role: 'admin',
-                };
-
-                // Guardar en localStorage
-                localStorage.setItem('freeGardenUser', JSON.stringify(userData));
-                setUser(userData);
-
-                return { success: true };
-            }
-
+            const loggedUser = await authService.login(email, password);
+            setUser(loggedUser);
+            return { success: true };
+        } catch (err) {
+            console.error('Error de login:', err);
+            setError(err.message);
             return {
                 success: false,
-                message: 'Credenciales incorrectas. Intenta con admin@freegarden.com / admin123'
+                message: err.message || 'Credenciales incorrectas'
             };
-        } catch (error) {
-            console.error('Login error:', error);
-            return {
-                success: false,
-                message: error.message || 'Error al iniciar sesión'
-            };
+        } finally {
+            setLoading(false);
         }
     };
 
     // Función para registrar un nuevo usuario
     const register = async (userData) => {
+        setLoading(true);
+        setError(null);
         try {
-            // Simulación de registro para desarrollo
-            console.log('Usuario registrado:', userData);
-
+            const newUser = await authService.register(userData);
+            setUser(newUser);
             return {
                 success: true,
                 message: 'Usuario registrado correctamente'
             };
-        } catch (error) {
-            console.error('Register error:', error);
+        } catch (err) {
+            console.error('Error de registro:', err);
+            setError(err.message);
             return {
                 success: false,
-                message: error.message || 'Error al registrar usuario'
+                message: err.message || 'Error al registrar usuario'
             };
+        } finally {
+            setLoading(false);
         }
     };
 
     // Función para cerrar sesión
-    const logout = () => {
-        localStorage.removeItem('freeGardenUser');
-        setUser(null);
-        navigate('/login');
+    const logout = async () => {
+        try {
+            await authService.logout();
+            setUser(null);
+            navigate('/login');
+        } catch (err) {
+            console.error('Error al cerrar sesión:', err);
+            setError(err.message);
+        }
     };
 
     // Verificar si el usuario está autenticado
@@ -98,6 +107,7 @@ export const AuthProvider = ({ children }) => {
     const value = {
         user,
         loading,
+        error,
         login,
         register,
         logout,

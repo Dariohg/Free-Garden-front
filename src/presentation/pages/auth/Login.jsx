@@ -148,7 +148,20 @@ const Login = () => {
                 alignItems="center"
                 justifyContent="center"
                 p={4}
+                position="relative"
             >
+                <IconButton
+                    position="absolute"
+                    top={4}
+                    left={4}
+                    aria-label="Volver a inicio"
+                    icon={<FiArrowLeft />}
+                    variant="ghost"
+                    color="gray.500"
+                    _hover={{ color: "white" }}
+                    onClick={handleBackToHome}
+                    size="md"
+                />
 
                 <Box
                     w="100%"

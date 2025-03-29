@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -18,62 +18,22 @@ import {
     Stat,
     StatLabel,
     StatNumber,
-    StatHelpText,
-    Tab,
-    Tabs,
-    TabList,
-    TabPanel,
-    TabPanels,
     useColorModeValue,
+    Spinner,
+    Alert,
+    AlertIcon,
 } from '@chakra-ui/react';
-import { FiArrowLeft, FiDroplet, FiThermometer, FiActivity, FiSettings } from 'react-icons/fi';
-
-// Datos simulados de sensores
-const sensorData = {
-    '1': {
-        id: '1',
-        name: 'Sensor Principal',
-        type: 'Humedad y Temperatura',
-        location: 'Jardín frontal',
-        humidity: 65,
-        temperature: 24,
-        battery: 85,
-        lastReading: '2025-03-12T10:30:00',
-        status: 'active',
-        readings: [
-            { timestamp: '2025-03-12T10:30:00', humidity: 65, temperature: 24 },
-            { timestamp: '2025-03-12T09:30:00', humidity: 64, temperature: 23 },
-            { timestamp: '2025-03-12T08:30:00', humidity: 62, temperature: 22 },
-            { timestamp: '2025-03-12T07:30:00', humidity: 63, temperature: 21 },
-            { timestamp: '2025-03-12T06:30:00', humidity: 67, temperature: 20 },
-        ]
-    },
-    '2': {
-        id: '2',
-        name: 'Sensor Secundario',
-        type: 'Humedad',
-        location: 'Jardín trasero',
-        humidity: 58,
-        temperature: null,
-        battery: 72,
-        lastReading: '2025-03-12T10:15:00',
-        status: 'active',
-        readings: [
-            { timestamp: '2025-03-12T10:15:00', humidity: 58, temperature: null },
-            { timestamp: '2025-03-12T09:15:00', humidity: 56, temperature: null },
-            { timestamp: '2025-03-12T08:15:00', humidity: 55, temperature: null },
-            { timestamp: '2025-03-12T07:15:00', humidity: 57, temperature: null },
-            { timestamp: '2025-03-12T06:15:00', humidity: 59, temperature: null },
-        ]
-    }
-};
+import { FiArrowLeft, FiActivity, FiRefreshCw } from 'react-icons/fi';
+import { useSensors } from '../hooks/useSensors';
 
 const SensorDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { sensorData, isLoading, error, refreshData, getSensorHistory } = useSensors();
     const [sensor, setSensor] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [history, setHistory] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [historyError, setHistoryError] = useState(null);
 
     const bgColor = useColorModeValue('white', 'background.dark.secondary');
     const borderColor = useColorModeValue('rgba(0, 0, 0, 0.05)', 'rgba(255, 255, 255, 0.05)');
@@ -84,47 +44,69 @@ const SensorDetail = () => {
         return date.toLocaleString();
     };
 
-    // Simulación de carga de datos del sensor
+    // Identificar el sensor correcto basado en el ID
     useEffect(() => {
-        setLoading(true);
+        if (!isLoading && sensorData) {
+            let foundSensor = null;
 
-        setTimeout(() => {
-            const sensorInfo = sensorData[id];
-            if (sensorInfo) {
-                setSensor(sensorInfo);
-                setError(null);
-            } else {
-                setError('Sensor no encontrado');
+            if (id === 'ENV_TEMP') foundSensor = sensorData.environment.temperature;
+            else if (id === 'ENV_HUM') foundSensor = sensorData.environment.humidity;
+            else if (id === 'SOIL_HUM') foundSensor = sensorData.soilHumidity;
+            else if (id === 'WATER_PH') foundSensor = sensorData.waterPH;
+            else if (id === 'WATER_LEVEL') foundSensor = sensorData.waterLevel;
+
+            setSensor(foundSensor);
+
+            // Cargar el historial
+            if (foundSensor) {
+                setLoadingHistory(true);
+                getSensorHistory(id)
+                    .then(history => {
+                        setHistory(history);
+                        setHistoryError(null);
+                    })
+                    .catch(err => {
+                        console.error('Error loading sensor history:', err);
+                        setHistoryError('No se pudo cargar el historial del sensor');
+                    })
+                    .finally(() => {
+                        setLoadingHistory(false);
+                    });
             }
-            setLoading(false);
-        }, 500);
-    }, [id]);
+        }
+    }, [id, isLoading, sensorData, getSensorHistory]);
 
-    // Obtener el color según el valor de humedad
-    const getHumidityColor = (value) => {
-        if (value < 40) return "orange.500";
-        if (value < 60) return "yellow.500";
-        if (value < 80) return "green.500";
-        return "blue.500";
+    // Obtener el color según el valor para gráficos
+    const getSensorColor = (type, value) => {
+        if (type === 'temperature') {
+            if (value < 15) return "blue.500";
+            if (value < 22) return "green.500";
+            if (value < 28) return "yellow.500";
+            return "orange.500";
+        } else if (type === 'humidity' || type === 'soil_humidity') {
+            if (value < 40) return "orange.500";
+            if (value < 60) return "yellow.500";
+            if (value < 80) return "green.500";
+            return "blue.500";
+        } else if (type === 'ph') {
+            if (value < 6.0) return "purple.300";
+            if (value > 7.2) return "purple.600";
+            return "green.500";
+        }
+
+        return "gray.500";
     };
 
-    // Obtener el color según el valor de temperatura
-    const getTemperatureColor = (value) => {
-        if (value < 15) return "blue.500";
-        if (value < 22) return "green.500";
-        if (value < 28) return "yellow.500";
-        return "orange.500";
-    };
-
-    if (loading) {
+    if (isLoading && !sensor) {
         return (
             <Box p={4} textAlign="center">
-                <Text>Cargando información del sensor...</Text>
+                <Spinner size="xl" color="brand.500" thickness="4px" />
+                <Text mt={4}>Cargando información del sensor...</Text>
             </Box>
         );
     }
 
-    if (error) {
+    if (error || !sensor) {
         return (
             <Box p={4}>
                 <Button leftIcon={<FiArrowLeft />} onClick={() => navigate('/dashboard')} mb={4}>
@@ -132,7 +114,10 @@ const SensorDetail = () => {
                 </Button>
                 <Card bg={bgColor} borderColor={borderColor}>
                     <CardBody>
-                        <Text>{error}</Text>
+                        <Alert status="error" borderRadius="md">
+                            <AlertIcon />
+                            {error || 'Sensor no encontrado'}
+                        </Alert>
                     </CardBody>
                 </Card>
             </Box>
@@ -141,16 +126,31 @@ const SensorDetail = () => {
 
     return (
         <Box p={4}>
-            <Flex align="center" mb={6}>
-                <IconButton
-                    icon={<FiArrowLeft />}
-                    aria-label="Volver"
-                    mr={4}
-                    onClick={() => navigate('/dashboard')}
-                />
-                <Heading as="h1" size="lg">
-                    {sensor.name}
-                </Heading>
+            <Flex align="center" justify="space-between" mb={6}>
+                <Flex align="center">
+                    <IconButton
+                        icon={<FiArrowLeft />}
+                        aria-label="Volver"
+                        mr={4}
+                        onClick={() => navigate('/dashboard/sensors')}
+                    />
+                    <Heading as="h1" size="lg">
+                        {sensor.type === 'temperature' && 'Temperatura Ambiente'}
+                        {sensor.type === 'humidity' && 'Humedad Ambiente'}
+                        {sensor.type === 'soil_humidity' && 'Humedad de la Tierra'}
+                        {sensor.type === 'ph' && 'pH del Agua'}
+                        {sensor.type === 'water_level' && 'Nivel del Depósito'}
+                    </Heading>
+                </Flex>
+                <Button
+                    leftIcon={<FiRefreshCw />}
+                    variant="outline"
+                    colorScheme="brand"
+                    size="sm"
+                    onClick={refreshData}
+                >
+                    Actualizar
+                </Button>
             </Flex>
 
             <Stack spacing={6}>
@@ -168,8 +168,8 @@ const SensorDetail = () => {
                                         <Text fontWeight="medium">{sensor.type}</Text>
                                     </Flex>
                                     <Flex justify="space-between" w="full">
-                                        <Text color="text.secondary">Ubicación:</Text>
-                                        <Text fontWeight="medium">{sensor.location}</Text>
+                                        <Text color="text.secondary">Unidad:</Text>
+                                        <Text fontWeight="medium">{sensor.unit}</Text>
                                     </Flex>
                                     <Flex justify="space-between" w="full">
                                         <Text color="text.secondary">Estado:</Text>
@@ -179,7 +179,7 @@ const SensorDetail = () => {
                                     </Flex>
                                     <Flex justify="space-between" w="full">
                                         <Text color="text.secondary">Última lectura:</Text>
-                                        <Text fontWeight="medium">{formatDate(sensor.lastReading)}</Text>
+                                        <Text fontWeight="medium">{formatDate(sensor.timestamp)}</Text>
                                     </Flex>
                                 </VStack>
                             </Box>
@@ -195,52 +195,29 @@ const SensorDetail = () => {
                                     <Box>
                                         <Flex justify="space-between" mb={1}>
                                             <HStack>
-                                                <FiDroplet />
-                                                <Text>Humedad</Text>
+                                                <FiActivity />
+                                                <Text>Valor</Text>
                                             </HStack>
-                                            <Text fontWeight="medium" color={getHumidityColor(sensor.humidity)}>
-                                                {sensor.humidity}%
+                                            <Text
+                                                fontWeight="medium"
+                                                color={getSensorColor(sensor.type, sensor.value)}
+                                            >
+                                                {sensor.value}{sensor.unit}
                                             </Text>
                                         </Flex>
                                         <Progress
-                                            value={sensor.humidity}
+                                            value={(sensor.value - sensor.minValue) / (sensor.maxValue - sensor.minValue) * 100}
                                             size="sm"
-                                            colorScheme={getHumidityColor(sensor.humidity).split('.')[0]}
+                                            colorScheme={getSensorColor(sensor.type, sensor.value).split('.')[0]}
                                             borderRadius="full"
                                         />
                                     </Box>
 
-                                    {sensor.temperature !== null && (
-                                        <Box>
-                                            <Flex justify="space-between" mb={1}>
-                                                <HStack>
-                                                    <FiThermometer />
-                                                    <Text>Temperatura</Text>
-                                                </HStack>
-                                                <Text fontWeight="medium" color={getTemperatureColor(sensor.temperature)}>
-                                                    {sensor.temperature}°C
-                                                </Text>
-                                            </Flex>
-                                            <Progress
-                                                value={(sensor.temperature / 40) * 100}
-                                                size="sm"
-                                                colorScheme={getTemperatureColor(sensor.temperature).split('.')[0]}
-                                                borderRadius="full"
-                                            />
-                                        </Box>
-                                    )}
-
                                     <Box>
                                         <Flex justify="space-between" mb={1}>
-                                            <Text>Batería</Text>
-                                            <Text fontWeight="medium">{sensor.battery}%</Text>
+                                            <Text>Rango</Text>
+                                            <Text fontWeight="medium">{sensor.minValue}{sensor.unit} - {sensor.maxValue}{sensor.unit}</Text>
                                         </Flex>
-                                        <Progress
-                                            value={sensor.battery}
-                                            size="sm"
-                                            colorScheme={sensor.battery > 20 ? "green" : "red"}
-                                            borderRadius="full"
-                                        />
                                     </Box>
                                 </Stack>
                             </Box>
@@ -248,129 +225,59 @@ const SensorDetail = () => {
                     </CardBody>
                 </Card>
 
-                {/* Pestañas para histórico y configuración */}
+                {/* Historial del sensor */}
                 <Card bg={bgColor} borderColor={borderColor}>
                     <CardBody>
-                        <Tabs colorScheme="brand" variant="enclosed">
-                            <TabList>
-                                <Tab><HStack><FiActivity /><Text>Histórico</Text></HStack></Tab>
-                                <Tab><HStack><FiSettings /><Text>Configuración</Text></HStack></Tab>
-                            </TabList>
+                        <Flex justify="space-between" align="center" mb={4}>
+                            <Text fontWeight="medium" fontSize="lg">
+                                Historial de lecturas
+                            </Text>
+                        </Flex>
 
-                            <TabPanels>
-                                <TabPanel>
-                                    <Text fontWeight="medium" fontSize="lg" mb={4}>
-                                        Historial de lecturas
-                                    </Text>
-
-                                    <Stack spacing={4}>
-                                        {sensor.readings.map((reading, index) => (
-                                            <Box
-                                                key={index}
-                                                p={4}
-                                                borderRadius="md"
-                                                borderWidth="1px"
-                                                borderColor={borderColor}
-                                            >
-                                                <Flex justify="space-between" align="center" mb={2}>
-                                                    <Text fontWeight="medium">{formatDate(reading.timestamp)}</Text>
-                                                </Flex>
-                                                <Flex gap={6}>
-                                                    <Stat>
-                                                        <StatLabel>Humedad</StatLabel>
-                                                        <StatNumber>{reading.humidity}%</StatNumber>
-                                                        <StatHelpText>
-                                                            {reading.humidity > 60 ? "Óptima" : "Baja"}
-                                                        </StatHelpText>
-                                                    </Stat>
-
-                                                    {reading.temperature !== null && (
-                                                        <Stat>
-                                                            <StatLabel>Temperatura</StatLabel>
-                                                            <StatNumber>{reading.temperature}°C</StatNumber>
-                                                            <StatHelpText>
-                                                                {reading.temperature < 28 ? "Normal" : "Alta"}
-                                                            </StatHelpText>
-                                                        </Stat>
-                                                    )}
-                                                </Flex>
-                                            </Box>
-                                        ))}
-                                    </Stack>
-                                </TabPanel>
-
-                                <TabPanel>
-                                    <Text fontWeight="medium" fontSize="lg" mb={4}>
-                                        Configuración del sensor
-                                    </Text>
-
-                                    <Stack spacing={4}>
-                                        <Box p={4} borderRadius="md" borderWidth="1px" borderColor={borderColor}>
-                                            <Text fontWeight="medium" mb={2}>Umbrales de alerta</Text>
-                                            <VStack align="start" spacing={2}>
-                                                <Flex justify="space-between" w="full">
-                                                    <Text>Humedad mínima</Text>
-                                                    <Text fontWeight="medium">40%</Text>
-                                                </Flex>
-                                                <Flex justify="space-between" w="full">
-                                                    <Text>Humedad máxima</Text>
-                                                    <Text fontWeight="medium">80%</Text>
-                                                </Flex>
-                                                {sensor.temperature !== null && (
-                                                    <>
-                                                        <Flex justify="space-between" w="full">
-                                                            <Text>Temperatura mínima</Text>
-                                                            <Text fontWeight="medium">15°C</Text>
-                                                        </Flex>
-                                                        <Flex justify="space-between" w="full">
-                                                            <Text>Temperatura máxima</Text>
-                                                            <Text fontWeight="medium">30°C</Text>
-                                                        </Flex>
-                                                    </>
-                                                )}
-                                            </VStack>
-                                        </Box>
-
-                                        <Box p={4} borderRadius="md" borderWidth="1px" borderColor={borderColor}>
-                                            <Text fontWeight="medium" mb={2}>Configuración de notificaciones</Text>
-                                            <VStack align="start" spacing={2}>
-                                                <Flex justify="space-between" w="full">
-                                                    <Text>Alertas por correo</Text>
-                                                    <Badge colorScheme="green">Activadas</Badge>
-                                                </Flex>
-                                                <Flex justify="space-between" w="full">
-                                                    <Text>Frecuencia de reportes</Text>
-                                                    <Text fontWeight="medium">Diaria</Text>
-                                                </Flex>
-                                            </VStack>
-                                        </Box>
-
-                                        <Box p={4} borderRadius="md" borderWidth="1px" borderColor={borderColor}>
-                                            <Text fontWeight="medium" mb={2}>Información del dispositivo</Text>
-                                            <VStack align="start" spacing={2}>
-                                                <Flex justify="space-between" w="full">
-                                                    <Text>Versión de firmware</Text>
-                                                    <Text fontWeight="medium">2.3.5</Text>
-                                                </Flex>
-                                                <Flex justify="space-between" w="full">
-                                                    <Text>Último mantenimiento</Text>
-                                                    <Text fontWeight="medium">01/03/2025</Text>
-                                                </Flex>
-                                                <Flex justify="space-between" w="full">
-                                                    <Text>Número de serie</Text>
-                                                    <Text fontWeight="medium">SN-2025-00123</Text>
-                                                </Flex>
-                                            </VStack>
-                                        </Box>
-
-                                        <Flex justify="flex-end" gap={3}>
-                                            <Button variant="outline">Restablecer</Button>
-                                            <Button colorScheme="brand">Guardar cambios</Button>
+                        {loadingHistory ? (
+                            <Box textAlign="center" py={4}>
+                                <Spinner size="md" color="brand.500" />
+                                <Text mt={2}>Cargando historial...</Text>
+                            </Box>
+                        ) : historyError ? (
+                            <Alert status="error" mb={4} borderRadius="md">
+                                <AlertIcon />
+                                {historyError}
+                            </Alert>
+                        ) : history.length === 0 ? (
+                            <Text textAlign="center" py={4} color="text.secondary">
+                                No hay datos históricos disponibles
+                            </Text>
+                        ) : (
+                            <Stack spacing={4}>
+                                {history.map((reading, index) => (
+                                    <Box
+                                        key={index}
+                                        p={4}
+                                        borderRadius="md"
+                                        borderWidth="1px"
+                                        borderColor={borderColor}
+                                    >
+                                        <Flex justify="space-between" align="center" mb={2}>
+                                            <Text fontWeight="medium">{formatDate(reading.timestamp)}</Text>
                                         </Flex>
-                                    </Stack>
-                                </TabPanel>
-                            </TabPanels>
-                        </Tabs>
+                                        <Flex gap={6}>
+                                            <Stat>
+                                                <StatLabel>{
+                                                    sensor.type === 'temperature' ? 'Temperatura' :
+                                                        sensor.type === 'humidity' ? 'Humedad' :
+                                                            sensor.type === 'soil_humidity' ? 'Humedad de Tierra' :
+                                                                sensor.type === 'ph' ? 'pH' : 'Nivel'
+                                                }</StatLabel>
+                                                <StatNumber>
+                                                    {reading.value}{sensor.unit}
+                                                </StatNumber>
+                                            </Stat>
+                                        </Flex>
+                                    </Box>
+                                ))}
+                            </Stack>
+                        )}
                     </CardBody>
                 </Card>
             </Stack>

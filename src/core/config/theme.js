@@ -229,6 +229,7 @@ const components = {
 const config = {
     initialColorMode: "dark",
     useSystemColorMode: false,
+    disableColorModeToggle: true,
 };
 
 // Estilos globales

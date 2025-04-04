@@ -1,10 +1,23 @@
 export class User {
-    constructor(id, nombre, apellido, email, telefono, codigo_sistema) {
+    constructor(id, name, email, firstName, lastName, kitCode) {
         this.id = id;
-        this.nombre = nombre;
-        this.apellido = apellido;
+        this.name = name || `${firstName || ''} ${lastName || ''}`.trim();
         this.email = email;
-        this.telefono = telefono;
-        this.codigo_sistema = codigo_sistema;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.kitCode = kitCode;
+    }
+
+    static fromApiResponse(data) {
+        if (!data) return null;
+
+        return new User(
+            data.id,
+            data.name,
+            data.email,
+            data.first_name || data.firstName,
+            data.last_name || data.lastName,
+            data.kit_code || data.kitCode
+        );
     }
 }

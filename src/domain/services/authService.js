@@ -7,31 +7,40 @@ export class AuthService {
 
     async login(email, password) {
         try {
-            const userData = await this.repository.login(email, password);
-            return new User(
-                userData.id,
-                userData.nombre,
-                userData.apellido,
-                userData.email,
-                userData.telefono,
-                userData.codigo_sistema
-            );
+            const result = await this.repository.login(email, password);
+
+            if (result && result.success && (result.user || result.token)) {
+                return {
+                    success: true,
+                    user: result.user,
+                    token: result.token
+                };
+            }
+
+            return {
+                success: false,
+                message: 'No se recibieron datos válidos del servidor'
+            };
         } catch (error) {
-            throw error;
+            return {
+                success: false,
+                message: error.message || 'Error al iniciar sesión'
+            };
         }
     }
 
     async register(userData) {
         try {
-            const registeredUser = await this.repository.register(userData);
-            return new User(
-                registeredUser.id,
-                registeredUser.nombre,
-                registeredUser.apellido,
-                registeredUser.email,
-                registeredUser.telefono,
-                registeredUser.codigo_sistema
-            );
+            const result = await this.repository.register(userData);
+
+            if (result && result.success) {
+                return {
+                    success: true,
+                    message: result.message || 'Usuario registrado correctamente'
+                };
+            } else {
+                throw new Error(result.message || 'Error en el registro');
+            }
         } catch (error) {
             throw error;
         }
@@ -39,7 +48,7 @@ export class AuthService {
 
     async logout() {
         try {
-            await this.repository.logout();
+            return await this.repository.logout();
         } catch (error) {
             throw error;
         }
@@ -50,14 +59,16 @@ export class AuthService {
             const userData = await this.repository.getCurrentUser();
             if (!userData) return null;
 
-            return new User(
-                userData.id,
-                userData.nombre,
-                userData.apellido,
-                userData.email,
-                userData.telefono,
-                userData.codigo_sistema
-            );
+            return User.fromApiResponse(userData);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async updateUserProfile(userId, userData) {
+        try {
+            const result = await this.repository.updateUserProfile(userId, userData);
+            return result;
         } catch (error) {
             throw error;
         }

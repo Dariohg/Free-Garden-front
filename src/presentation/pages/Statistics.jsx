@@ -296,5 +296,4 @@ const Statistics = () => {
         </Box>
     );
 };
-
 export default Statistics;

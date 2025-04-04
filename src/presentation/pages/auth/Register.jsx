@@ -1,27 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
-    Box,
-    Flex,
-    Heading,
-    Text,
-    FormControl,
-    Input,
-    Button,
-    InputGroup,
-    InputRightElement,
-    FormErrorMessage,
-    Alert,
-    AlertIcon,
-    Link,
-    VStack,
-    Grid,
-    GridItem,
-    Image,
-    SimpleGrid,
-    IconButton,
-    InputLeftAddon,
-    Tooltip,
+    Box, Flex, Heading, Text, FormControl, Input, Button,
+    InputGroup, InputRightElement, FormErrorMessage, Alert,
+    AlertIcon, Link, VStack, Grid, GridItem, Image, SimpleGrid,
+    IconButton, Tooltip
 } from '@chakra-ui/react';
 import { FiEye, FiEyeOff, FiArrowRight, FiArrowLeft, FiInfo } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
@@ -31,7 +14,6 @@ const Register = () => {
         nombre: '',
         apellido: '',
         email: '',
-        telefono: '',
         codigoSistema: '',
         password: '',
         confirmPassword: '',
@@ -73,16 +55,8 @@ const Register = () => {
             errors.email = 'El correo electrónico no es válido';
         }
 
-        if (!formData.telefono) {
-            errors.telefono = 'El número de teléfono es requerido';
-        } else if (!/^\d{10}$/.test(formData.telefono)) {
-            errors.telefono = 'Ingresa un número de teléfono válido (10 dígitos)';
-        }
-
         if (!formData.codigoSistema) {
             errors.codigoSistema = 'El código del sistema es requerido';
-        } else if (!/^[A-Z0-9]{6,12}$/.test(formData.codigoSistema)) {
-            errors.codigoSistema = 'Código inválido (debe tener 6-12 caracteres alfanuméricos)';
         }
 
         if (!formData.password) {
@@ -101,7 +75,6 @@ const Register = () => {
         return Object.keys(errors).length === 0;
     };
 
-    // Manejar el envío del formulario
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -116,7 +89,6 @@ const Register = () => {
                 nombre: formData.nombre,
                 apellido: formData.apellido,
                 email: formData.email,
-                telefono: formData.telefono,
                 codigoSistema: formData.codigoSistema,
                 password: formData.password,
             };
@@ -125,13 +97,13 @@ const Register = () => {
             const result = await register(userData);
 
             if (result.success) {
-                // Redireccionar al login
-                navigate('/login');
+                // Redireccionar al login con mensaje de éxito
+                navigate('/login', { state: { registerSuccess: true } });
             } else {
                 setError(result.message || 'Error al registrar. Intenta de nuevo.');
             }
         } catch (error) {
-            setError('Ocurrió un error durante el registro');
+            setError(error.message || 'Ocurrió un error durante el registro');
             console.error('Register error:', error);
         } finally {
             setIsLoading(false);
@@ -139,8 +111,8 @@ const Register = () => {
     };
 
     // Función para volver
-    const handleBackToLogin = () => {
-        navigate('/login');
+    const handleBack = () => {
+        navigate('/');
     };
 
     return (
@@ -210,25 +182,25 @@ const Register = () => {
                 order={{ base: 1, md: 2 }}
                 position="relative"
             >
-                {/* Botón para volver al login */}
+                {/* Botón para volver */}
                 <IconButton
                     position="absolute"
                     top={4}
                     left={4}
-                    aria-label="Volver a iniciar sesión"
+                    aria-label="Volver a inicio"
                     icon={<FiArrowLeft />}
                     variant="ghost"
                     color="gray.500"
                     _hover={{ color: "white" }}
-                    onClick={handleBackToLogin}
+                    onClick={handleBack}
                     size="md"
                 />
 
                 <Box
                     w="100%"
-                    maxW="500px"
+                    maxW="450px"
                     mx="auto"
-                    py={8}
+                    mt={12}
                 >
                     <VStack spacing={6} align="stretch">
                         {/* Encabezado */}
@@ -334,35 +306,6 @@ const Register = () => {
                                     {formErrors.email && <FormErrorMessage>{formErrors.email}</FormErrorMessage>}
                                 </FormControl>
 
-                                <FormControl isInvalid={!!formErrors.telefono}>
-                                    <InputGroup size="md">
-                                        <InputLeftAddon
-                                            children="+52"
-                                            bg="#252525"
-                                            color="gray.400"
-                                            border="none"
-                                        />
-                                        <Input
-                                            id="telefono"
-                                            type="tel"
-                                            value={formData.telefono}
-                                            onChange={handleChange}
-                                            placeholder="Número de teléfono"
-                                            bg="#1E1E1E"
-                                            border="none"
-                                            color="white"
-                                            _placeholder={{ color: 'gray.500' }}
-                                            _hover={{ bg: "#252525" }}
-                                            _focus={{
-                                                bg: "#252525",
-                                                borderColor: "#4CAF50",
-                                            }}
-                                            borderRadius="md"
-                                        />
-                                    </InputGroup>
-                                    {formErrors.telefono && <FormErrorMessage>{formErrors.telefono}</FormErrorMessage>}
-                                </FormControl>
-
                                 <FormControl isInvalid={!!formErrors.codigoSistema}>
                                     <InputGroup size="md">
                                         <Input
@@ -383,7 +326,7 @@ const Register = () => {
                                         />
                                         <InputRightElement>
                                             <Tooltip
-                                                label="Este código viene con tu sistema Free Garden. Si no tienes uno, contacta a soporte."
+                                                label="Este código viene con tu sistema Free Garden"
                                                 aria-label="Información del código"
                                                 placement="top"
                                                 bg="#333"

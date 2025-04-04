@@ -1,25 +1,11 @@
-import { useState } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import {
-    Box,
-    Flex,
-    Heading,
-    Text,
-    FormControl,
-    Input,
-    Button,
-    InputGroup,
-    InputRightElement,
-    FormErrorMessage,
-    Alert,
-    AlertIcon,
-    Link,
-    VStack,
-    Grid,
-    GridItem,
-    Image, IconButton,
+    Box, Flex, Heading, Text, FormControl, Input, Button,
+    InputGroup, InputRightElement, FormErrorMessage, Alert,
+    AlertIcon, Link, VStack, Grid, GridItem, Image, IconButton
 } from '@chakra-ui/react';
-import {FiEye, FiEyeOff, FiArrowRight, FiArrowLeft} from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiArrowRight, FiArrowLeft } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Login = () => {
@@ -29,9 +15,18 @@ const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [formErrors, setFormErrors] = useState({});
+    const [registerSuccess, setRegisterSuccess] = useState(false);
 
     const navigate = useNavigate();
+    const location = useLocation();
     const { login } = useAuth();
+
+    useEffect(() => {
+        // Verificar si venimos de un registro exitoso
+        if (location.state?.registerSuccess) {
+            setRegisterSuccess(true);
+        }
+    }, [location]);
 
     // Validar el formulario
     const validateForm = () => {
@@ -59,6 +54,7 @@ const Login = () => {
 
         setIsLoading(true);
         setError('');
+        setRegisterSuccess(false);
 
         try {
             // Llamar a la función login con email y password
@@ -78,7 +74,7 @@ const Login = () => {
     };
 
     // Función para volver a la página principal
-    const handleBackToHome = () => {
+    const handleBack = () => {
         navigate('/');
     };
 
@@ -101,8 +97,6 @@ const Login = () => {
                     w="100%"
                     h="100%"
                 />
-
-
 
                 {/* Overlay para mejorar visibilidad del texto */}
                 <Box
@@ -159,7 +153,7 @@ const Login = () => {
                     variant="ghost"
                     color="gray.500"
                     _hover={{ color: "white" }}
-                    onClick={handleBackToHome}
+                    onClick={handleBack}
                     size="md"
                 />
 
@@ -168,7 +162,6 @@ const Login = () => {
                     maxW="400px"
                     mx="auto"
                 >
-
                     <VStack spacing={6} align="stretch">
                         {/* Encabezado */}
                         <Box textAlign="center">
@@ -190,6 +183,20 @@ const Login = () => {
                             </Text>
                         </Box>
 
+                        {/* Mensaje de registro exitoso */}
+                        {registerSuccess && (
+                            <Alert
+                                status="success"
+                                bg="rgba(72, 187, 120, 0.15)"
+                                color="green.200"
+                                borderRadius="md"
+                                fontSize="sm"
+                            >
+                                <AlertIcon color="green.400" />
+                                Usuario registrado con éxito. Ahora puedes iniciar sesión.
+                            </Alert>
+                        )}
+
                         {/* Mensaje de error */}
                         {error && (
                             <Alert
@@ -206,7 +213,6 @@ const Login = () => {
 
                         {/* Formulario */}
                         <form onSubmit={handleSubmit}>
-
                             <VStack spacing={4}>
                                 <FormControl isInvalid={!!formErrors.email}>
                                     <Input
@@ -307,16 +313,6 @@ const Login = () => {
                                 </Flex>
                             </VStack>
                         </form>
-
-                        {/* Información de demostración */}
-                        <Box textAlign="center" mt={4}>
-                            <Text fontSize="xs" color="gray.600">
-                                Para fines de demostración, usa:
-                            </Text>
-                            <Text fontSize="xs" color="gray.500">
-                                admin@freegarden.com / admin123
-                            </Text>
-                        </Box>
                     </VStack>
                 </Box>
             </GridItem>

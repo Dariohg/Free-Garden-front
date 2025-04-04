@@ -28,13 +28,32 @@ export const AuthProvider = ({ children }) => {
         const checkAuth = async () => {
             setLoading(true);
             try {
-                const currentUser = await authService.getCurrentUser();
-                setUser(currentUser);
+                // Verificar si hay un token en localStorage
+                const token = localStorage.getItem('token');
+
+                if (token) {
+                    // Intentar cargar los datos del usuario desde localStorage
+                    const storedUser = localStorage.getItem('userData');
+                    if (storedUser) {
+                        try {
+                            const userData = JSON.parse(storedUser);
+                            setUser(userData);
+                        } catch (e) {
+                            console.error('Error al parsear datos del usuario:', e);
+                            localStorage.removeItem('userData');
+                        }
+                    }
+                } else {
+                    setUser(null);
+                }
+
                 setError(null);
             } catch (err) {
                 console.error('Error verificando autenticación:', err);
                 setError(err.message);
                 setUser(null);
+                localStorage.removeItem('token');
+                localStorage.removeItem('userData');
             } finally {
                 setLoading(false);
             }
@@ -48,11 +67,18 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            const loggedUser = await authService.login(email, password);
-            setUser(loggedUser);
-            return { success: true };
+            const result = await authService.login(email, password);
+
+            if (result && result.user) {
+                setUser(result.user);
+                return { success: true };
+            } else {
+                return {
+                    success: false,
+                    message: 'No se pudo obtener la información del usuario'
+                };
+            }
         } catch (err) {
-            console.error('Error de login:', err);
             setError(err.message);
             return {
                 success: false,
@@ -63,20 +89,26 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Función para registrar un nuevo usuario
     const register = async (userData) => {
         setLoading(true);
         setError(null);
         try {
-            const newUser = await authService.register(userData);
-            setUser(newUser);
-            return {
-                success: true,
-                message: 'Usuario registrado correctamente'
-            };
+            const result = await authService.register(userData);
+
+            // Solo verificamos si tuvo éxito
+            if (result.success) {
+                return {
+                    success: true,
+                    message: result.message || 'Usuario registrado correctamente'
+                };
+            } else {
+                return {
+                    success: false,
+                    message: result.message || 'No se pudo completar el registro'
+                };
+            }
         } catch (err) {
             console.error('Error de registro:', err);
-            setError(err.message);
             return {
                 success: false,
                 message: err.message || 'Error al registrar usuario'
@@ -93,7 +125,6 @@ export const AuthProvider = ({ children }) => {
             setUser(null);
             navigate('/login');
         } catch (err) {
-            console.error('Error al cerrar sesión:', err);
             setError(err.message);
         }
     };
@@ -101,6 +132,12 @@ export const AuthProvider = ({ children }) => {
     // Verificar si el usuario está autenticado
     const isAuthenticated = () => {
         return !!user;
+    };
+
+    // Actualizar datos del usuario
+    const updateUser = (newUserData) => {
+        setUser(newUserData);
+        localStorage.setItem('userData', JSON.stringify(newUserData));
     };
 
     // Valor del contexto
@@ -111,7 +148,8 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
-        isAuthenticated
+        isAuthenticated,
+        updateUser
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

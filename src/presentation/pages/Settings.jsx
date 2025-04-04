@@ -1,5 +1,5 @@
 // src/presentation/pages/Settings.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Box,
     Button,
@@ -17,21 +17,23 @@ import {
     Avatar,
     useColorModeValue,
     Divider,
-    Switch,
+    Spinner,
+    Alert,
+    AlertIcon,
 } from '@chakra-ui/react';
-import { FiEdit, FiUser, FiMail, FiPhone, FiKey, FiShield } from 'react-icons/fi';
+import { FiEdit, FiUser, FiMail, FiKey, FiShield } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 
 const Settings = () => {
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
     const toast = useToast();
     const [isEditing, setIsEditing] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
-        nombre: user?.nombre || 'Administrador',
-        apellido: user?.apellido || 'Free Garden',
-        email: user?.email || 'admin@freegarden.com',
-        telefono: user?.telefono || '+52 1 123 456 7890',
-        codigo_sistema: user?.codigo_sistema || 'FG-2025-0057',
+        nombre: '',
+        apellido: '',
+        email: '',
+        codigo_sistema: '',
         password: '••••••••',
     });
 
@@ -42,6 +44,20 @@ const Settings = () => {
     const labelColor = useColorModeValue('gray.700', 'gray.300');
     const helperTextColor = useColorModeValue('gray.500', 'gray.500');
     const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+    // Cargar datos del usuario cuando se monte el componente
+    useEffect(() => {
+        if (user) {
+            console.log('Datos de usuario para formulario:', user);
+            setFormData({
+                nombre: user.first_name || user.nombre || '',
+                apellido: user.last_name || user.apellido || '',
+                email: user.email || '',
+                codigo_sistema: user.kit_code || user.codigo_sistema || '',
+                password: '••••••••',
+            });
+        }
+    }, [user]);
 
     // Manejador para los cambios en los inputs
     const handleChange = (e) => {
@@ -59,6 +75,7 @@ const Settings = () => {
 
     // Guardar cambios del perfil
     const handleSaveProfile = () => {
+        // Aquí iría la lógica de guardado con la API cuando esté lista
         setIsEditing(false);
         toast({
             title: 'Perfil actualizado',
@@ -72,16 +89,37 @@ const Settings = () => {
     // Cancelar edición
     const handleCancel = () => {
         // Restaurar datos originales
-        setFormData({
-            nombre: user?.nombre || 'Administrador',
-            apellido: user?.apellido || 'Free Garden',
-            email: user?.email || 'admin@freegarden.com',
-            telefono: user?.telefono || '+52 1 123 456 7890',
-            codigo_sistema: user?.codigo_sistema || 'FG-2025-0057',
-            password: '••••••••',
-        });
+        if (user) {
+            setFormData({
+                nombre: user.name || user.nombre || '',
+                apellido: user.last_name || user.apellido || '',
+                email: user.email || '',
+                codigo_sistema: user.system_code || user.codigo_sistema || '',
+                password: '••••••••',
+            });
+        }
         setIsEditing(false);
     };
+
+    if (loading) {
+        return (
+            <Flex justify="center" align="center" h="80vh">
+                <Spinner size="xl" color="brand.500" thickness="4px" />
+                <Text ml={4}>Cargando información del usuario...</Text>
+            </Flex>
+        );
+    }
+
+    if (!user) {
+        return (
+            <Box p={8}>
+                <Alert status="warning">
+                    <AlertIcon />
+                    No se pudo cargar la información del usuario. Por favor, inicia sesión nuevamente.
+                </Alert>
+            </Box>
+        );
+    }
 
     return (
         <Box p={6}>
@@ -134,7 +172,9 @@ const Settings = () => {
                                 mr={6}
                             />
                             <Box color="white">
-                                <Heading size="lg">{formData.nombre} {formData.apellido}</Heading>
+                                <Heading size="lg">
+                                    {formData.nombre || 'Usuario'} {formData.apellido || ''}
+                                </Heading>
                                 <HStack mt={1} spacing={3}>
                                     <Text fontSize="sm">{formData.email}</Text>
                                     <Badge colorScheme="green">Activo</Badge>
@@ -149,61 +189,65 @@ const Settings = () => {
                             borderColor="white"
                             onClick={handleEdit}
                             _hover={{ bg: "rgba(255,255,255,0.1)" }}
-                            isDisabled={isEditing}
+                            isDisabled={isEditing || isLoading}
                         >
                             Editar
                         </Button>
                     </Flex>
                 </Box>
 
-                {/* Contenido */}
-                <VStack spacing={6} p={8} align="stretch">
-                    <Text fontWeight="bold" fontSize="lg">Información Personal</Text>
-
-                    <Flex gap={6} flexWrap="wrap">
-                        <FormControl flex="1" minW="250px">
-                            <FormLabel color={labelColor}>
-                                <HStack spacing={2}>
-                                    <Icon as={FiUser} />
-                                    <Text>Nombre</Text>
-                                </HStack>
-                            </FormLabel>
-                            <Input
-                                id="nombre"
-                                value={formData.nombre}
-                                onChange={handleChange}
-                                placeholder="Tu nombre"
-                                isDisabled={!isEditing}
-                                bg={isEditing ? inputBg : inputBgDisabled}
-                                _disabled={{ opacity: 0.8 }}
-                            />
-                        </FormControl>
-
-                        <FormControl flex="1" minW="250px">
-                            <FormLabel color={labelColor}>
-                                <HStack spacing={2}>
-                                    <Icon as={FiUser} />
-                                    <Text>Apellido</Text>
-                                </HStack>
-                            </FormLabel>
-                            <Input
-                                id="apellido"
-                                value={formData.apellido}
-                                onChange={handleChange}
-                                placeholder="Tu apellido"
-                                isDisabled={!isEditing}
-                                bg={isEditing ? inputBg : inputBgDisabled}
-                                _disabled={{ opacity: 0.8 }}
-                            />
-                        </FormControl>
+                {isLoading ? (
+                    <Flex justify="center" align="center" minH="300px">
+                        <Spinner size="xl" color="brand.500" thickness="4px" />
+                        <Text ml={4}>Guardando cambios...</Text>
                     </Flex>
+                ) : (
+                    <VStack spacing={6} p={8} align="stretch">
+                        <Text fontWeight="bold" fontSize="lg">Información Personal</Text>
 
-                    <Divider />
+                        <Flex gap={6} flexWrap="wrap">
+                            <FormControl flex="1" minW="250px">
+                                <FormLabel color={labelColor}>
+                                    <HStack spacing={2}>
+                                        <Icon as={FiUser} />
+                                        <Text>Nombre</Text>
+                                    </HStack>
+                                </FormLabel>
+                                <Input
+                                    id="nombre"
+                                    value={formData.nombre}
+                                    onChange={handleChange}
+                                    placeholder="Tu nombre"
+                                    isDisabled={!isEditing}
+                                    bg={isEditing ? inputBg : inputBgDisabled}
+                                    _disabled={{ opacity: 0.8 }}
+                                />
+                            </FormControl>
 
-                    <Text fontWeight="bold" fontSize="lg">Información de Contacto</Text>
+                            <FormControl flex="1" minW="250px">
+                                <FormLabel color={labelColor}>
+                                    <HStack spacing={2}>
+                                        <Icon as={FiUser} />
+                                        <Text>Apellido</Text>
+                                    </HStack>
+                                </FormLabel>
+                                <Input
+                                    id="apellido"
+                                    value={formData.apellido}
+                                    onChange={handleChange}
+                                    placeholder="Tu apellido"
+                                    isDisabled={!isEditing}
+                                    bg={isEditing ? inputBg : inputBgDisabled}
+                                    _disabled={{ opacity: 0.8 }}
+                                />
+                            </FormControl>
+                        </Flex>
 
-                    <Flex gap={6} flexWrap="wrap">
-                        <FormControl flex="1" minW="250px">
+                        <Divider />
+
+                        <Text fontWeight="bold" fontSize="lg">Información de Contacto</Text>
+
+                        <FormControl>
                             <FormLabel color={labelColor}>
                                 <HStack spacing={2}>
                                     <Icon as={FiMail} />
@@ -222,82 +266,73 @@ const Settings = () => {
                             />
                         </FormControl>
 
-                        <FormControl flex="1" minW="250px">
-                            <FormLabel color={labelColor}>
-                                <HStack spacing={2}>
-                                    <Icon as={FiPhone} />
-                                    <Text>Teléfono</Text>
-                                </HStack>
-                            </FormLabel>
-                            <Input
-                                id="telefono"
-                                value={formData.telefono}
-                                onChange={handleChange}
-                                placeholder="+52 1 123 456 7890"
-                                isDisabled={!isEditing}
-                                bg={isEditing ? inputBg : inputBgDisabled}
-                                _disabled={{ opacity: 0.8 }}
-                            />
-                        </FormControl>
-                    </Flex>
+                        <Divider />
 
-                    <Divider />
+                        <Text fontWeight="bold" fontSize="lg">Información del Sistema</Text>
 
-                    <Text fontWeight="bold" fontSize="lg">Información del Sistema</Text>
+                        <Flex gap={6} flexWrap="wrap">
+                            <FormControl flex="1" minW="250px">
+                                <FormLabel color={labelColor}>
+                                    <HStack spacing={2}>
+                                        <Icon as={FiShield} />
+                                        <Text>Código del sistema</Text>
+                                    </HStack>
+                                </FormLabel>
+                                <Input
+                                    id="codigo_sistema"
+                                    value={formData.codigo_sistema}
+                                    isReadOnly
+                                    bg={inputBgDisabled}
+                                    _disabled={{ opacity: 0.8 }}
+                                    fontFamily="monospace"
+                                    placeholder="Sin código asignado"
+                                />
+                                <Text fontSize="xs" mt={1} color={helperTextColor}>
+                                    Este código es único para tu sistema Free Garden
+                                </Text>
+                            </FormControl>
 
-                    <Flex gap={6} flexWrap="wrap">
-                        <FormControl flex="1" minW="250px">
-                            <FormLabel color={labelColor}>
-                                <HStack spacing={2}>
-                                    <Icon as={FiShield} />
-                                    <Text>Código del sistema</Text>
-                                </HStack>
-                            </FormLabel>
-                            <Input
-                                id="codigo_sistema"
-                                value={formData.codigo_sistema}
-                                isReadOnly
-                                bg={inputBgDisabled}
-                                _disabled={{ opacity: 0.8 }}
-                                fontFamily="monospace"
-                            />
-                            <Text fontSize="xs" mt={1} color={helperTextColor}>
-                                Este código es único para tu sistema Free Garden
-                            </Text>
-                        </FormControl>
-
-                        <FormControl flex="1" minW="250px">
-                            <FormLabel color={labelColor}>
-                                <HStack spacing={2}>
-                                    <Icon as={FiKey} />
-                                    <Text>Contraseña</Text>
-                                </HStack>
-                            </FormLabel>
-                            <Input
-                                id="password"
-                                value={formData.password}
-                                isReadOnly
-                                type="password"
-                                bg={inputBgDisabled}
-                                _disabled={{ opacity: 0.8 }}
-                            />
-                            <Text fontSize="xs" mt={1} color={helperTextColor}>
-                                No se puede mostrar por razones de seguridad
-                            </Text>
-                        </FormControl>
-                    </Flex>
-
-                    {isEditing && (
-                        <Flex mt={4} justify="flex-end" gap={4}>
-                            <Button variant="outline" onClick={handleCancel}>
-                                Cancelar
-                            </Button>
-                            <Button colorScheme="brand" onClick={handleSaveProfile}>
-                                Guardar Cambios
-                            </Button>
+                            <FormControl flex="1" minW="250px">
+                                <FormLabel color={labelColor}>
+                                    <HStack spacing={2}>
+                                        <Icon as={FiKey} />
+                                        <Text>Contraseña</Text>
+                                    </HStack>
+                                </FormLabel>
+                                <Input
+                                    id="password"
+                                    value={formData.password}
+                                    isReadOnly
+                                    type="password"
+                                    bg={inputBgDisabled}
+                                    _disabled={{ opacity: 0.8 }}
+                                />
+                                <Text fontSize="xs" mt={1} color={helperTextColor}>
+                                    No se puede mostrar por razones de seguridad
+                                </Text>
+                            </FormControl>
                         </Flex>
-                    )}
-                </VStack>
+
+                        {isEditing && (
+                            <Flex mt={4} justify="flex-end" gap={4}>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleCancel}
+                                    isDisabled={isLoading}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    colorScheme="brand"
+                                    onClick={handleSaveProfile}
+                                    isLoading={isLoading}
+                                >
+                                    Guardar Cambios
+                                </Button>
+                            </Flex>
+                        )}
+                    </VStack>
+                )}
             </Box>
         </Box>
     );
